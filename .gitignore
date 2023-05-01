@@ -1,0 +1,9 @@
+*
+!/src
+!.gitignore
+!src/fs.cpp
+!src/fs.h
+!src/node.cpp
+!src/node.h
+!src/main.cpp
+!CMakeLists.txt

@@ -1,45 +1,24 @@
-#include <iostream>
-#include <vector>
+#include <stddef.h>
 
-enum struct NodeType {
-  FILENODE,
-  DIRNODE
-};
+typedef enum NODE_TYPE { FILENODE, DIRNODE } NODE_TYPE;
 
-class Visitor;
+#define MX_SUBNODES 100
 
-class Node {
-public:
-  std::string name;
-  Node* parent;
-  NodeType type;
-};
+typedef struct node_t {
+  char* name;
+  struct node_t* parent;
+  NODE_TYPE type;
+  // max nodes inside a dir node
+  struct node_t* children[MX_SUBNODES];
+  int node_idx;
+  char* content;
+  unsigned int size;
+} node_t;
 
-class DirNode: public Node {
-public:
-  std::vector<Node*> children;
+node_t* get_node(node_t* node, char* name);
 
-  DirNode();
-  DirNode(std::string name, Node* parent = nullptr);
-  bool exist(std::string name);
-  int mkdir(std::string name);
-  /* int rmdir(std::string name); */
-  int mknod(std::string name);
-  /* int rmnod(std::string name); */
-  std::vector<Node*> lsdir();
-};
+node_t* dir_init(node_t* node, char* name);
 
-class FileNode: public Node {
-public:
-  std::string content;
-
-  FileNode(std::string name, Node* parent = nullptr);
-  void write(std::string content);
-  std::string read();
-};
-
-class Visitor {
-public:
-  DirNode visit(DirNode& dir);
-  FileNode visit(FileNode& file);
-};
+node_t* file_init(node_t* node, char* name);
+void file_write(node_t* node, const char* content, off_t offset, size_t size);
+char* file_read(node_t* node);

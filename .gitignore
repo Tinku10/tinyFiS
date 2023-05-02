@@ -1,9 +1,10 @@
 *
 !/src
 !.gitignore
-!src/fs.cpp
+!src/fs.c
 !src/fs.h
-!src/node.cpp
+!src/node.c
 !src/node.h
-!src/main.cpp
-!CMakeLists.txt
+!src/main.c
+!.clang-format
+!makefile

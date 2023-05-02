@@ -1,25 +1,35 @@
-#include "node.h"
+#define FUSE_USE_VERSION 30
+
 #include <fuse.h>
 
-class FileSystem {
-public:
-  DirNode* root;
-  int max_depth;
-  DirNode* curr_dir;
+#include "node.h"
 
-  FileSystem();
+typedef struct filesystem_t {
+  node_t* root;
+  node_t* curr_node;
+} filesystem_t;
 
-  int enter_dir(DirNode dir);
-  int exit_dir();
-  // return the nth node from the end
-  Node nth_node(std::string path, int n = 0);
+void fs_init(filesystem_t* fs);
+node_t* nth_node(filesystem_t* fs, const char* path);
 
-  int getattr(const char* path, struct stat* st);
-  int readdir(const char* path, void* buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi);
-  int read(const char* path, char* buffer, size_t size, off_t offset, struct fuse_file_info* fi);
-  int mkdir(const char* path, mode_t mode);
-  int mknod(const char* path, mode_t mode, dev_t dev);
-  int write(const char* path, const char* buffer, size_t size, off_t offset, struct fuse_file_info* info);
-};
-
-
+int fs_getattr(filesystem_t* fs, const char* path, struct stat* st);
+int fs_readdir(filesystem_t* fs,
+               const char* path,
+               void* buffer,
+               fuse_fill_dir_t filler,
+               off_t offset,
+               struct fuse_file_info* fi);
+int fs_read(filesystem_t* fs,
+            const char* path,
+            char* buffer,
+            size_t size,
+            off_t offset,
+            struct fuse_file_info* fi);
+int fs_mkdir(filesystem_t* fs, const char* path, mode_t mode);
+int fs_mknod(filesystem_t* fs, const char* path, mode_t mode, dev_t dev);
+int fs_write(filesystem_t* fs,
+             const char* path,
+             const char* buffer,
+             size_t size,
+             off_t offset,
+             struct fuse_file_info* info);

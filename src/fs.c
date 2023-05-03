@@ -28,16 +28,14 @@ node_t* nth_node(filesystem_t* fs, const char* path) {
   char* curr_token = strtok(path_copy, "/");
 
   while (curr_token != NULL) {
-    printf("%s\n", curr_token);
-
     fs->curr_node = get_node(fs->curr_node, curr_token);
 
-    if (fs->curr_node == NULL) return fs->curr_node;
+    if (fs->curr_node == NULL) break;
 
     curr_token = strtok(NULL, "/");
   }
 
-  // free(path_copy);
+  free(path_copy);
 
   return fs->curr_node;
 }
@@ -58,7 +56,7 @@ int fs_getattr(filesystem_t* fs, const char* path, struct stat* st) {
   } else if (base->type == FILENODE) {
     st->st_mode = S_IFREG | 0644;
     st->st_nlink = 1;
-    st->st_size = 1024;
+    st->st_size = base->size;
   } else {
     return -ENOENT;
   }
@@ -97,9 +95,11 @@ int fs_read(filesystem_t* fs,
 
   if (bytes_to_read > size) bytes_to_read = size;
 
-  printf("reading from %s of size %d at offset %d", path, bytes_to_read,
-         offset);
-  memcpy(buffer, base->content + offset, bytes_to_read);
+  printf("reading from %s of size %d bytes at offset %lld\n", path, bytes_to_read, offset);
+
+  char* content = file_read(base, offset);
+
+  memcpy(buffer, content, bytes_to_read);
 
   return size - offset;
 }

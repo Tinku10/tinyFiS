@@ -1,7 +1,7 @@
 #ifndef FS_NODE_H
 #define FS_NODE_H
 
-#include <stddef.h>
+#include <sys/types.h>
 
 #define MAX_SUBNODES 100
 
@@ -24,6 +24,6 @@ node_t* dir_init(node_t* node, char* name);
 
 node_t* file_init(node_t* node, char* name);
 void file_write(node_t* node, const char* content, off_t offset, size_t size);
-char* file_read(node_t* node);
+char* file_read(node_t* node, off_t offset);
 
 #endif

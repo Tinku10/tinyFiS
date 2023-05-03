@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <string.h>
 
 node_t* get_node(node_t* node, char* name) {
@@ -81,8 +82,8 @@ node_t* file_init(node_t* node, char* name) {
   return file;
 }
 
-char* file_read(node_t* node) {
-  return node->content;
+char* file_read(node_t* node, off_t offset) {
+  return node->content + offset;
 }
 
 void file_write(node_t* node, const char* content, off_t offset, size_t size) {

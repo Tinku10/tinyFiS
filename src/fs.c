@@ -76,7 +76,7 @@ int fs_readdir(filesystem_t* fs,
 
   node_t* base = nth_node(fs, path);
 
-  for (int i = 0; i < MX_SUBNODES; i++) {
+  for (int i = 0; i < MAX_SUBNODES; i++) {
     if (base->children[i] == NULL) break;
 
     filler(buffer, base->children[i]->name, NULL, 0);

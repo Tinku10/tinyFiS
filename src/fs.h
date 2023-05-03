@@ -1,3 +1,6 @@
+#ifndef FS_FS_H
+#define FS_FS_H
+
 #define FUSE_USE_VERSION 30
 
 #include <fuse.h>
@@ -33,3 +36,5 @@ int fs_write(filesystem_t* fs,
              size_t size,
              off_t offset,
              struct fuse_file_info* info);
+
+#endif

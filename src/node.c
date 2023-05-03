@@ -10,7 +10,7 @@ node_t* get_node(node_t* node, char* name) {
 
   printf("looking for node %s in %s\n", name, node->name);
 
-  for (int i = 0; i < MX_SUBNODES; i++) {
+  for (int i = 0; i < MAX_SUBNODES; i++) {
     if (node->children[i] == NULL) return NULL;
 
     if (strcmp(name, node->children[i]->name) == 0) {

@@ -22,9 +22,6 @@ node_t* nth_node(filesystem_t* fs, const char* path) {
 
   char* path_copy = strdup(path);
 
-  // remove the root dir
-  path_copy++;
-
   char* curr_token = strtok(path_copy, "/");
 
   while (curr_token != NULL) {

@@ -4,6 +4,7 @@
 #define FUSE_USE_VERSION 30
 
 #include <fuse.h>
+#include <sys/types.h>
 
 #include "node.h"
 
@@ -13,7 +14,7 @@ typedef struct filesystem_t {
 } filesystem_t;
 
 void fs_init(filesystem_t* fs);
-node_t* nth_node(filesystem_t* fs, const char* path);
+node_t* fs_get_last_node(filesystem_t* fs, const char* path);
 
 int fs_getattr(filesystem_t* fs, const char* path, struct stat* st);
 int fs_readdir(filesystem_t* fs,
@@ -36,5 +37,6 @@ int fs_write(filesystem_t* fs,
              size_t size,
              off_t offset,
              struct fuse_file_info* info);
+int fs_create(filesystem_t* fs, const char* path, mode_t mode, struct fuse_file_info* fi);
 
 #endif

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 void fs_init(filesystem_t* fs) {
   char* root_name = "/";
@@ -12,7 +13,7 @@ void fs_init(filesystem_t* fs) {
   fs->curr_node = fs->root;
 }
 
-node_t* nth_node(filesystem_t* fs, const char* path) {
+node_t* fs_get_last_node(filesystem_t* fs, const char* path) {
   printf("finding last node in %s\n", path);
 
   if (strcmp(path, fs->root->name) == 0) return fs->root;
@@ -21,15 +22,29 @@ node_t* nth_node(filesystem_t* fs, const char* path) {
   fs->curr_node = fs->root;
 
   char* path_copy = strdup(path);
-
   char* curr_token = strtok(path_copy, "/");
 
   while (curr_token != NULL) {
-    fs->curr_node = get_node(fs->curr_node, curr_token);
+    node_t* prev = fs->curr_node;
+    fs->curr_node = node_get(fs->curr_node, curr_token);
+    char* next_token = strtok(NULL, "/");
 
-    if (fs->curr_node == NULL) break;
+    // if there is no node, create a empty node and return
+    if (fs->curr_node == NULL) {
+      // if the current token does not exist in the system
+      // it cannot have a child node
+      if (next_token != NULL) {
+        printf("%s does not exist", curr_token);
+        return NULL;
+      }
 
-    curr_token = strtok(NULL, "/");
+      fs->curr_node = node_init(curr_token);
+      fs->curr_node->parent = prev;
+
+      break;
+    }
+
+    curr_token = next_token;
   }
 
   free(path_copy);
@@ -43,7 +58,7 @@ int fs_getattr(filesystem_t* fs, const char* path, struct stat* st) {
   st->st_atime = time(NULL);
   st->st_mtime = time(NULL);
 
-  node_t* base = nth_node(fs, path);
+  node_t* base = fs_get_last_node(fs, path);
 
   if (base == NULL) return -ENOENT;
 
@@ -69,7 +84,9 @@ int fs_readdir(filesystem_t* fs,
                struct fuse_file_info* fi) {
   printf("reading directory %s\n", path);
 
-  node_t* base = nth_node(fs, path);
+  node_t* base = fs_get_last_node(fs, path);
+
+  if (base == NULL) return -1;
 
   for (int i = 0; i < MAX_SUBNODES; i++) {
     if (base->children[i] == NULL) break;
@@ -86,7 +103,9 @@ int fs_read(filesystem_t* fs,
             size_t size,
             off_t offset,
             struct fuse_file_info* fi) {
-  node_t* base = nth_node(fs, path);
+  node_t* base = fs_get_last_node(fs, path);
+
+  if (base == NULL) return -1;
 
   int bytes_to_read = base->size - offset;
 
@@ -95,62 +114,29 @@ int fs_read(filesystem_t* fs,
   printf("reading from %s of size %d bytes at offset %lld\n", path, bytes_to_read, offset);
 
   char* content = file_read(base, offset);
-
   memcpy(buffer, content, bytes_to_read);
 
   return size - offset;
 }
 
 int fs_mkdir(filesystem_t* fs, const char* path, mode_t mode) {
-  // path always starts from root of the file system
-  fs->curr_node = fs->root;
+  node_t* base = fs_get_last_node(fs, path);
+  node_t* parent = base->parent;
 
-  char* path_copy = strdup(path);
+  if (base == NULL) return -1;
 
-  char* curr_token = strtok(path_copy, "/");
-
-  while (curr_token != NULL) {
-    node_t* next = get_node(fs->curr_node, curr_token);
-
-    if (next == NULL) {
-      dir_init(fs->curr_node, curr_token);
-
-      printf("created a directory %s\n", curr_token);
-      break;
-    }
-
-    fs->curr_node = next;
-    curr_token = strtok(NULL, "/");
-  }
-
-  // free(path_copy);
+  dir_add(parent, base);
 
   return 0;
 }
 
 int fs_mknod(filesystem_t* fs, const char* path, mode_t mode, dev_t dev) {
-  // path always starts from root of the file system
-  fs->curr_node = fs->root;
+  node_t* base = fs_get_last_node(fs, path);
+  node_t* parent = base->parent;
 
-  char* path_copy = strdup(path);
+  if (base == NULL) return -1;
 
-  char* curr_token = strtok(path_copy, "/");
-
-  while (curr_token != NULL) {
-    node_t* next = get_node(fs->curr_node, curr_token);
-
-    if (next == NULL) {
-      file_init(fs->curr_node, curr_token);
-
-      printf("created a file %s\n", curr_token);
-      break;
-    }
-
-    fs->curr_node = next;
-    curr_token = strtok(NULL, "/");
-  }
-
-  free(path_copy);
+  file_add(parent, base);
 
   return 0;
 }
@@ -161,13 +147,24 @@ int fs_write(filesystem_t* fs,
              size_t size,
              off_t offset,
              struct fuse_file_info* info) {
-  node_t* base = nth_node(fs, path);
+  node_t* base = fs_get_last_node(fs, path);
 
-  assert(base != NULL);
+  if (base == NULL) return -1;
 
   printf("writing %s of size %d bytes to %s\n", buffer, size, base->name);
 
   file_write(base, buffer, offset, size);
 
   return size;
+}
+
+int fs_create(filesystem_t* fs, const char* path, mode_t mode, struct fuse_file_info* fi) {
+  node_t* base = fs_get_last_node(fs, path);
+  node_t* parent = base->parent;
+
+  if (base == NULL) return -1;
+
+  file_add(parent, base);
+
+  return 0;
 }

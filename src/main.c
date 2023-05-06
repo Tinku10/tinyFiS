@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "fs.h"
+#include <assert.h>
 
 static filesystem_t* fs = NULL;
 
@@ -44,6 +45,10 @@ static int do_write(const char* path,
   return fs_write(fs, path, buffer, size, offset, info);
 }
 
+static int do_create(const char* path, mode_t mode, struct fuse_file_info* fi) {
+  return fs_create(fs, path, mode, fi);
+}
+
 static struct fuse_operations operations = {
     .getattr = do_getattr,
     .mknod = do_mknod,
@@ -51,12 +56,16 @@ static struct fuse_operations operations = {
     .read = do_read,
     .write = do_write,
     .readdir = do_readdir,
+    .create = do_create,
 };
 
 int main(int argc, char* argv[]) {
   printf("starting the file system\n");
+
   fs = (filesystem_t*)malloc(sizeof(filesystem_t));
-  printf(fs);
+
+  assert(fs != NULL);
+
   fs_init(fs);
 
   return fuse_main(argc, argv, &operations, NULL);

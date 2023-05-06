@@ -8,8 +8,8 @@
 #include <sys/types.h>
 
 void fs_init(filesystem_t* fs) {
-  char* root_name = "/";
-  fs->root = dir_init(NULL, root_name);
+  fs->root = node_init("/");
+  dir_add(NULL, fs->root);
   fs->curr_node = fs->root;
 }
 

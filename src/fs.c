@@ -239,3 +239,23 @@ int fs_truncate(filesystem_t* fs, const char* path, off_t offset) {
 
   return 0;
 }
+
+int fs_unlink(filesystem_t* fs, const char* path) {
+  node_t* base = fs_get_last_node(fs, path);
+
+  if (base == NULL) return -ENOENT;
+
+  file_remove(base);
+
+  return 0;
+}
+
+int fs_rmdir(filesystem_t* fs, const char* path) {
+  node_t* base = fs_get_last_node(fs, path);
+
+  if (base == NULL) return -ENOENT;
+
+  dir_remove(base);
+
+  return 0;
+}

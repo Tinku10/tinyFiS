@@ -72,6 +72,16 @@ static int do_truncate(const char* path, off_t size) {
   return fs_truncate(fs, path, size);
 }
 
+static int do_unlink(const char* path) {
+  printf("removing file %s", path);
+  return fs_unlink(fs, path);
+}
+
+static int do_rmdir(const char* path) {
+  printf("removing directory %s", path);
+  return fs_rmdir(fs, path);
+}
+
 static struct fuse_operations operations = {
     .getattr = do_getattr,
     .mknod = do_mknod,
@@ -84,6 +94,8 @@ static struct fuse_operations operations = {
     .release = do_release,
     .utimens = do_utimens,
     .truncate = do_truncate,
+    .unlink = do_unlink,
+    .rmdir = do_rmdir,
 };
 
 int main(int argc, char* argv[]) {

@@ -42,5 +42,7 @@ int fs_open(filesystem_t* fs, const char* path, struct fuse_file_info* fi);
 int fs_release(filesystem_t* fs, const char* path, struct fuse_file_info* fi);
 int fs_utimens(filesystem_t* fs, const char* path, const struct timespec tv[2]);
 int fs_truncate(filesystem_t* fs, const char* path, off_t offset);
+int fs_unlink(filesystem_t* fs, const char* path);
+int fs_rmdir(filesystem_t* fs, const char* path);
 
 #endif

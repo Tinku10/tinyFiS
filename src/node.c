@@ -3,8 +3,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <string.h>
+#include <sys/types.h>
 
 node_t* node_get(node_t* node, char* name) {
   if (node == NULL) return NULL;
@@ -12,7 +12,7 @@ node_t* node_get(node_t* node, char* name) {
   printf("looking for node %s in %s\n", name, node->name);
 
   for (int i = 0; i < MAX_SUBNODES; i++) {
-    if (node->children[i] == NULL) return NULL;
+    if (node->children[i] == NULL) continue;
 
     if (strcmp(name, node->children[i]->name) == 0) {
       printf("found node %s\n", name);
@@ -24,6 +24,21 @@ node_t* node_get(node_t* node, char* name) {
   return NULL;
 }
 
+void dir_set_next_idx(node_t* node) {
+  int next_index = node->node_idx % MAX_SUBNODES;
+
+  int remaining = MAX_SUBNODES;
+
+  while (remaining--) {
+    if (node->children[next_index] == NULL) {
+      node->node_idx = next_index;
+      break;
+    }
+    next_index = (next_index + 1) % MAX_SUBNODES;
+  }
+
+}
+
 void dir_add(node_t* node, node_t* child) {
   printf("initializing %s directory\n", child->name);
 
@@ -32,7 +47,8 @@ void dir_add(node_t* node, node_t* child) {
   child->node_idx = -1;
 
   if (node != NULL) {
-    node->children[++node->node_idx] = child;
+    dir_set_next_idx(node);
+    node->children[node->node_idx] = child;
     printf("added %s to %s at index %d\n", child->name, node->name, node->node_idx);
   }
 
@@ -46,7 +62,8 @@ void dir_add(node_t* node, node_t* child) {
   dot->type = DIRNODE;
   dot->node_idx = -1;
 
-  child->children[++child->node_idx] = dot;
+  dir_set_next_idx(child);
+  child->children[child->node_idx] = dot;
 
   node_t* dotdot = (node_t*)malloc(sizeof(node_t));
 
@@ -57,7 +74,33 @@ void dir_add(node_t* node, node_t* child) {
   dotdot->type = DIRNODE;
   dotdot->node_idx = -1;
 
-  child->children[++child->node_idx] = dotdot;
+  dir_set_next_idx(child);
+  child->children[child->node_idx] = dotdot;
+}
+
+void dir_remove(node_t* node) {
+  node_t* parent = node->parent;
+
+  for (int i = 0; i < MAX_SUBNODES; i++) {
+    if (parent->children[i] == NULL) continue;
+
+    if (strcmp(node->name, parent->children[i]->name) == 0) {
+      parent->children[i] = NULL;
+      break;
+    }
+  }
+
+  // destroy all sub-nodes
+  if (node->type == DIRNODE) {
+    for (int i = 0; i < MAX_SUBNODES; i++) {
+      if (node->children[i] == NULL) continue;
+
+      node_destroy(node->children[i]);
+    }
+  }
+
+  // destory the node
+  node_destroy(node);
 }
 
 node_t* node_init(char* name) {
@@ -78,7 +121,6 @@ void node_destroy(node_t* node) {
 }
 
 void file_add(node_t* node, node_t* child) {
-
   child->parent = node;
   child->type = FILENODE;
   child->content = NULL;
@@ -109,3 +151,18 @@ int file_truncate(node_t* node, off_t offset) {
   return 0;
 }
 
+void file_remove(node_t* node) {
+  node_t* parent = node->parent;
+
+  for (int i = 0; i < MAX_SUBNODES; i++) {
+    if (parent->children[i] == NULL) continue;
+
+    if (strcmp(node->name, parent->children[i]->name) == 0) {
+      parent->children[i] = NULL;
+      break;
+    }
+  }
+
+  // destory the node
+  node_destroy(node);
+}

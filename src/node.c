@@ -36,7 +36,7 @@ void dir_add(node_t* node, node_t* child) {
     printf("added %s to %s at index %d\n", child->name, node->name, node->node_idx);
   }
 
-  // add "." and ".." on new directory
+  // add "." and ".." in a new directory
   node_t* dot = (node_t*)malloc(sizeof(node_t));
 
   assert(dot != NULL);
@@ -61,6 +61,7 @@ void dir_add(node_t* node, node_t* child) {
 }
 
 node_t* node_init(char* name) {
+  printf("creating an empty node %s\n", name);
   node_t* null_node = (node_t*)malloc(sizeof(node_t));
 
   assert(null_node != NULL);
@@ -69,6 +70,11 @@ node_t* node_init(char* name) {
   null_node->type = NULLNODE;
 
   return null_node;
+}
+
+void node_destroy(node_t* node) {
+  free(node->name);
+  free(node);
 }
 
 void file_add(node_t* node, node_t* child) {
@@ -95,3 +101,11 @@ void file_write(node_t* node, const char* content, off_t offset, size_t size) {
 
   memcpy(node->content + offset, content, size);
 }
+
+int file_truncate(node_t* node, off_t offset) {
+  node->size -= offset;
+
+  memmove(node->content, node->content, offset);
+  return 0;
+}
+

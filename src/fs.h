@@ -38,5 +38,9 @@ int fs_write(filesystem_t* fs,
              off_t offset,
              struct fuse_file_info* info);
 int fs_create(filesystem_t* fs, const char* path, mode_t mode, struct fuse_file_info* fi);
+int fs_open(filesystem_t* fs, const char* path, struct fuse_file_info* fi);
+int fs_release(filesystem_t* fs, const char* path, struct fuse_file_info* fi);
+int fs_utimens(filesystem_t* fs, const char* path, const struct timespec tv[2]);
+int fs_truncate(filesystem_t* fs, const char* path, off_t offset);
 
 #endif

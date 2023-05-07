@@ -19,6 +19,7 @@ typedef struct node_t {
 } node_t;
 
 node_t* node_init(char* name);
+void node_destroy(node_t* node);
 node_t* node_get(node_t* node, char* name);
 
 void dir_add(node_t* node, node_t* child);
@@ -26,5 +27,7 @@ void dir_add(node_t* node, node_t* child);
 void file_add(node_t* node, node_t* child);
 void file_write(node_t* node, const char* content, off_t offset, size_t size);
 char* file_read(node_t* node, off_t offset);
+int file_truncate(node_t* node, off_t offset);
 
 #endif
+

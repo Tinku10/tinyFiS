@@ -19,27 +19,29 @@ node_t* fs_get_last_node(filesystem_t* fs, const char* path) {
   if (strcmp(path, fs->root->name) == 0) return fs->root;
 
   // path always starts from root of the file system
-  fs->curr_node = fs->root;
+  node_t* curr_node = fs->root;
 
   char* path_copy = strdup(path);
   char* curr_token = strtok(path_copy, "/");
 
   while (curr_token != NULL) {
-    node_t* prev = fs->curr_node;
-    fs->curr_node = node_get(fs->curr_node, curr_token);
+    node_t* prev = curr_node;
+    curr_node = node_get(curr_node, curr_token);
     char* next_token = strtok(NULL, "/");
 
     // if there is no node, create a empty node and return
-    if (fs->curr_node == NULL) {
+    if (curr_node == NULL) {
       // if the current token does not exist in the system
       // it cannot have a child node
       if (next_token != NULL) {
-        printf("%s does not exist", curr_token);
+        printf("%s does not exist\n", curr_token);
         return NULL;
       }
 
-      fs->curr_node = node_init(curr_token);
-      fs->curr_node->parent = prev;
+      // curr_token has to be duplicated
+      // otherwise when freeing path_copy, name will be a NULL
+      curr_node = node_init(strdup(curr_token));
+      curr_node->parent = prev;
 
       break;
     }
@@ -49,7 +51,7 @@ node_t* fs_get_last_node(filesystem_t* fs, const char* path) {
 
   free(path_copy);
 
-  return fs->curr_node;
+  return curr_node;
 }
 
 int fs_getattr(filesystem_t* fs, const char* path, struct stat* st) {
@@ -60,7 +62,9 @@ int fs_getattr(filesystem_t* fs, const char* path, struct stat* st) {
 
   node_t* base = fs_get_last_node(fs, path);
 
-  if (base == NULL) return -ENOENT;
+  if (base == NULL) {
+    return -ENOENT;
+  }
 
   if (base->type == DIRNODE) {
     st->st_mode = S_IFDIR | 0755;
@@ -86,7 +90,10 @@ int fs_readdir(filesystem_t* fs,
 
   node_t* base = fs_get_last_node(fs, path);
 
-  if (base == NULL) return -1;
+  if (base == NULL) {
+    printf("directory does not exist");
+    return -1;
+  }
 
   for (int i = 0; i < MAX_SUBNODES; i++) {
     if (base->children[i] == NULL) break;
@@ -105,7 +112,9 @@ int fs_read(filesystem_t* fs,
             struct fuse_file_info* fi) {
   node_t* base = fs_get_last_node(fs, path);
 
-  if (base == NULL) return -1;
+  if (base == NULL) {
+    return -1;
+  }
 
   int bytes_to_read = base->size - offset;
 
@@ -123,8 +132,13 @@ int fs_mkdir(filesystem_t* fs, const char* path, mode_t mode) {
   node_t* base = fs_get_last_node(fs, path);
   node_t* parent = base->parent;
 
-  if (base == NULL) return -1;
+  if (base == NULL) {
+    return -1;
+  }
 
+  base->type = DIRNODE;
+
+  printf("adding %s to %s\n", base->name, parent->name);
   dir_add(parent, base);
 
   return 0;
@@ -134,7 +148,11 @@ int fs_mknod(filesystem_t* fs, const char* path, mode_t mode, dev_t dev) {
   node_t* base = fs_get_last_node(fs, path);
   node_t* parent = base->parent;
 
-  if (base == NULL) return -1;
+  if (base == NULL) {
+    return -1;
+  }
+
+  base->type = FILENODE;
 
   file_add(parent, base);
 
@@ -146,10 +164,10 @@ int fs_write(filesystem_t* fs,
              const char* buffer,
              size_t size,
              off_t offset,
-             struct fuse_file_info* info) {
+             struct fuse_file_info* fi) {
   node_t* base = fs_get_last_node(fs, path);
 
-  if (base == NULL) return -1;
+  if ((fi->flags & O_ACCMODE) == O_RDONLY) return -EACCES;
 
   printf("writing %s of size %d bytes to %s\n", buffer, size, base->name);
 
@@ -162,9 +180,62 @@ int fs_create(filesystem_t* fs, const char* path, mode_t mode, struct fuse_file_
   node_t* base = fs_get_last_node(fs, path);
   node_t* parent = base->parent;
 
-  if (base == NULL) return -1;
+  if (base == NULL) {
+    return -1;
+  }
+
+  base->type = FILENODE;
 
   file_add(parent, base);
+
+  return 0;
+}
+
+int fs_open(filesystem_t* fs, const char* path, struct fuse_file_info* fi) {
+  node_t* base = fs_get_last_node(fs, path);
+
+  if (base == NULL) {
+    return -ENOENT;
+  }
+
+  if (base->type != FILENODE) return -EISDIR;
+
+  fi->fh = (intptr_t)base;
+
+  return 0;
+}
+
+int fs_release(filesystem_t* fs, const char* path, struct fuse_file_info* fi) {
+  node_t* node = (node_t*)(intptr_t)fi->fh;
+
+  if (node == NULL) {
+    printf("no file descriptor for %s\n", path);
+    return -ENOENT;
+  }
+
+  if (node->type != FILENODE) return -EISDIR;
+
+  fi->fh = 0;
+
+  printf("%s closed\n", path);
+
+  return 0;
+}
+
+int fs_utimens(filesystem_t* fs, const char* path, const struct timespec tv[2]) {
+  node_t* node = fs_get_last_node(fs, path);
+
+  if (node == NULL) {
+    return -ENOENT;
+  }
+
+  return 0;
+}
+
+int fs_truncate(filesystem_t* fs, const char* path, off_t offset) {
+  node_t* base = fs_get_last_node(fs, path);
+
+  file_truncate(base, offset);
 
   return 0;
 }

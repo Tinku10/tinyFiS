@@ -69,7 +69,7 @@ int fs_getattr(filesystem_t* fs, const char* path, struct stat* st) {
   if (base->type == DIRNODE) {
     st->st_mode = S_IFDIR | 0755;
     st->st_nlink = 2;
-  } else if (base->type == FILENODE) {
+  } else if (base->type == REG_FILENODE) {
     st->st_mode = S_IFREG | 0644;
     st->st_nlink = 1;
     st->st_size = base->size;
@@ -152,7 +152,7 @@ int fs_mknod(filesystem_t* fs, const char* path, mode_t mode, dev_t dev) {
     return -1;
   }
 
-  base->type = FILENODE;
+  base->type = REG_FILENODE;
 
   file_add(parent, base);
 
@@ -184,7 +184,7 @@ int fs_create(filesystem_t* fs, const char* path, mode_t mode, struct fuse_file_
     return -1;
   }
 
-  base->type = FILENODE;
+  base->type = REG_FILENODE;
 
   file_add(parent, base);
 
@@ -198,7 +198,7 @@ int fs_open(filesystem_t* fs, const char* path, struct fuse_file_info* fi) {
     return -ENOENT;
   }
 
-  if (base->type != FILENODE) return -EISDIR;
+  if (base->type != REG_FILENODE) return -EISDIR;
 
   fi->fh = (intptr_t)base;
 
@@ -213,7 +213,7 @@ int fs_release(filesystem_t* fs, const char* path, struct fuse_file_info* fi) {
     return -ENOENT;
   }
 
-  if (node->type != FILENODE) return -EISDIR;
+  if (node->type != REG_FILENODE) return -EISDIR;
 
   fi->fh = 0;
 
@@ -256,6 +256,45 @@ int fs_rmdir(filesystem_t* fs, const char* path) {
   if (base == NULL) return -ENOENT;
 
   dir_remove(base);
+
+  return 0;
+}
+
+int fs_link(filesystem_t* fs, const char* oldpath, const char* newpath) {
+  node_t* oldnode = fs_get_last_node(fs, oldpath);
+  node_t* newnode = fs_get_last_node(fs, newpath);
+
+  if (oldnode == NULL) {
+    return -ENOENT;
+  }
+
+  if (newnode == NULL) {
+    return -ENOENT;
+  }
+
+  newnode->type = HARDLINK_NODE;
+
+  file_link(oldnode, newnode);
+
+  return 0;
+}
+
+int fs_symbolic_link(filesystem_t* fs, const char* target, const char* linkpath) {
+  node_t* base = fs_get_last_node(target);
+  node_t* newnode = fs_get_last_node(linkpath);
+
+  if (oldnode == NULL) {
+    return -ENOENT;
+  }
+
+  if (newnode == NULL) {
+    return -ENOENT;
+  }
+
+  newnode->type = SOFTLINK_NODE;
+  newnode->info->soft_link_target = target;
+  
+  file_link(base, newnode);
 
   return 0;
 }

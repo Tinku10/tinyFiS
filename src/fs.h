@@ -44,5 +44,7 @@ int fs_utimens(filesystem_t* fs, const char* path, const struct timespec tv[2]);
 int fs_truncate(filesystem_t* fs, const char* path, off_t offset);
 int fs_unlink(filesystem_t* fs, const char* path);
 int fs_rmdir(filesystem_t* fs, const char* path);
+int fs_link(filesystem_t* fs, const char* oldpath, const char* newpath);
+int fs_symbolic_link(filesystem_t* fs, const char* target, const char* linkpath);
 
 #endif
